@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title></title>
+    <meta charset="utf-8" />
+    <style type="text/css">
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      html,
+      body,
+      #map {
+        height: 100%;
+        z-index: 1;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    />
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.6.0/ol.css"
+      type="text/css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.6.0/ol.js"></script>
+    <script src="https://cdn.bootcss.com/proj4js/2.4.3/proj4.js"></script>
+    <script src="https://cdn.bootcss.com/proj4leaflet/1.0.1/proj4leaflet.min.js"></script>
+    <script
+      type="text/javascript"
+      src="leaflet.ChineseTmsProviders.js"
+    ></script>
+  </head>
+
+  <body>
+    <form
+      id="formshp"
+      action=""
+      style="position: absolute; bottom: 6%; right: 5%; z-index: 10"
+    >
+      <!-- <label for=""> Name:<input type="text" name="name" /> </label> -->
+      <label for=""
+        >选择Shapefile<input id="fileshp" type="file" name="file"
+      /></label>
+      <label for="">
+        <input id="submitbtshp" type="button" value="上传" />
+      </label>
+    </form>
+    <form
+      id="formtif"
+      action=""
+      style="position: absolute; bottom: 2%; right: 5%; z-index: 10"
+    >
+      <!-- <label for=""> Name:<input type="text" name="name" /> </label> -->
+      <label for="">选择Tiff<input id="filetif" type="file" name="file" /></label>
+      <label for="">
+        <input id="submitbttif" type="button" value="上传" />
+      </label>
+    </form>
+    <div id="map"></div>
+  </body>
+
+  <script type="text/javascript">
+    var normalMap = L.tileLayer.chinaProvider("Google.Normal.Map", {
+        maxZoom: 18,
+        minZoom: 5,
+      }),
+      satelliteMap = L.tileLayer.chinaProvider("Google.Satellite.Map", {
+        maxZoom: 18,
+        minZoom: 5,
+      }),
+      routeMap = L.tileLayer.chinaProvider("Google.Satellite.Annotion", {
+        maxZoom: 18,
+        minZoom: 5,
+      });
+
+    var baseLayers = {
+      地图: normalMap,
+      影像: satelliteMap,
+      标注: routeMap,
+    };
+
+    // var wmsLayer = L.tileLayer.wms(
+    //   "http://localhost:8080/geoserver/test02/wms",
+    //   {
+    //     layers: "test02:HYP_50M_SR", //需要加载的图层
+    //     format: "image/png", //返回的数据格式
+    //     transparent: false,
+    //   }
+    // );
+
+    // var wmsLayer2 = L.tileLayer.wms(
+    //   "http://localhost:8080/geoserver/test01/wms",
+    //   {
+    //     layers: "test01:nyc_roads", //需要加载的图层
+    //     format: "image/png", //返回的数据格式
+    //     transparent: false,
+    //   }
+    // );
+
+    var map = L.map("map", {
+      center: [31.59, 120.29],
+      zoom: 12,
+      layers: [normalMap],
+      zoomControl: false,
+    });
+    // wmsLayer.addTo(map);
+    // wmsLayer2.addTo(map);
+    L.control.layers(baseLayers).addTo(map);
+    L.control
+      .zoom({
+        zoomInTitle: "放大",
+        zoomOutTitle: "缩小",
+      })
+      .addTo(map);
+
+    // 新建shp工作区
+    $.ajax({
+      url: "http://localhost:8080/geoserver/rest/workspaces",
+      dataType: "json",
+      contentType: "application/json",
+      type: "POST",
+      //      async: false,
+      //      processData:false,
+      data: JSON.stringify({ workspace: { name: "myUploadShp" } }),
+      success: function (data, textStatus) {
+        //data可能是xmlDoc、jsonObj、html、text等等
+        console.log(data);
+        this; //调用本次ajax请求时传递的options参数
+      },
+      error: function (XMLHttpRequest, textStatus, errorThrown) {
+        //通常情况下textStatus和errorThrown只有其中一个包含信息
+        console.log(textStatus + errorThrown);
+        this; //调用本次ajax请求时传递的options参数
+      },
+      headers: {
+        Authorization: "Basic YWRtaW46Z2Vvc2VydmVy",
+      },
+    });
+    // 上传shp
+    $("#submitbtshp").on("click", function () {
+      // 文件元素
+      var file = $("#fileshp")[0].files[0];
+      console.log(file);
+      // 通过FormData将文件转成二进制数据
+      var formData = new FormData();
+      // 将文件转二进制
+      formData.append("file", file);
+      $.ajax({
+        url: "http://localhost:8080/geoserver/rest/workspaces/myUploadShp/datastores/shp/file.shp?charset=GB2312",
+        dataType: "json",
+        contentType: "application/zip",
+        processData: false,
+        type: "PUT",
+        async: false,
+        data: formData,
+        headers: {
+          Authorization: "Basic YWRtaW46Z2Vvc2VydmVy",
+          "Content-type": "application/zip",
+        },
+        success: function (data, textStatus) {
+          //data可能是xmlDoc、jsonObj、html、text等等
+          console.log(data);
+          this; //调用本次ajax请求时传递的options参数
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          //通常情况下textStatus和errorThrown只有其中一个包含信息
+          console.log(textStatus + errorThrown);
+          this; //调用本次ajax请求时传递的options参数
+        },
+      });
+      var shpname=file.name.substring(0, file.name.indexOf('.'));
+      console.log("myUploadShp:"+shpname);
+      //   把shp加载到地图上
+            var wmsLayer = L.tileLayer.wms(
+        "http://localhost:8080/geoserver/myUploadShp/wms",
+        {
+          layers: "myUploadShp:"+shpname, //需要加载的图层
+          format: "image/png", //返回的数据格式
+          transparent: true,
+        }
+      );
+          wmsLayer.addTo(map);
+    });
+
+    // 新建工作区
+    $.ajax({
+      url: "http://localhost:8080/geoserver/rest/workspaces",
+      dataType: "json",
+      contentType: "application/json",
+      type: "POST",
+      //      async: false,
+      //      processData:false,
+      data: JSON.stringify({ workspace: { name: "myUploadTif" } }),
+      success: function (data, textStatus) {
+        //data可能是xmlDoc、jsonObj、html、text等等
+        console.log(data);
+        this; //调用本次ajax请求时传递的options参数
+      },
+      error: function (XMLHttpRequest, textStatus, errorThrown) {
+        //通常情况下textStatus和errorThrown只有其中一个包含信息
+        console.log(textStatus + errorThrown);
+        this; //调用本次ajax请求时传递的options参数
+      },
+      headers: {
+        Authorization: "Basic YWRtaW46Z2Vvc2VydmVy",
+      },
+    });
+    // 上传栅格tiff
+    $("#submitbttif").on("click", function () {
+      // 文件元素
+      var file = $("#filetif")[0].files[0];
+      console.log(file);
+      // 通过FormData将文件转成二进制数据
+      var formData = new FormData();
+      // 将文件转二进制
+      formData.append("file", file);
+      $.ajax({
+        url: "http://localhost:8080/geoserver/rest/workspaces/myUploadTif/coveragestores/tif/file.geotiff",
+        dataType: "json",
+        contentType: "application/zip",
+        processData: false,
+        type: "PUT",
+        async: false,
+        data: formData,
+        headers: {
+          Authorization: "Basic YWRtaW46Z2Vvc2VydmVy",
+          "Content-type": "application/zip",
+        },
+        success: function (data, textStatus) {
+          //data可能是xmlDoc、jsonObj、html、text等等
+          console.log(data);
+          this; //调用本次ajax请求时传递的options参数
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          //通常情况下textStatus和errorThrown只有其中一个包含信息
+          console.log(textStatus + errorThrown);
+          this; //调用本次ajax请求时传递的options参数
+        },
+      });
+
+      var tifname=file.name.substring(0, file.name.indexOf('.'));
+       //   把tif加载到地图上
+       console.log("myUploadTif:"+tifname);
+       var wmsLayer = L.tileLayer.wms(
+        "http://localhost:8080/geoserver/myUploadTif/wms",
+        {
+          layers: "myUploadTif:"+tifname, //需要加载的图层
+          format: "image/png", //返回的数据格式
+          transparent: true,
+        }
+      );
+          wmsLayer.addTo(map);
+    });
+  </script>
+</html>
